@@ -20,39 +20,43 @@ ULRLDLLURDRRUULRDUDDURDDDLRRRURLDRUDDLUDDDLLLRDLRLLRRUUDRRDRUULLLULULUUDRRRDRDRU
    [4 5 6]
    [7 8 9]])
 
-(defn coord->key [[x y]]
+(def keypad2 [[nil nil 1]
+              [nil 2 3 4]
+              [5 6 7 8 9]
+              [nil \A \B \C]
+              [nil nil \D]])
+
+(defn coord->key [keypad [x y]]
   (-> (get keypad y)
       (get x)))
 
 (defn walk-keypad
   "Add two vectors, but prevent them from going out of bounds."
-  [& vecs]
-  (let [[x y] (apply map + vecs)
-        constrain (fn [n] (if (< n 0) 0
-                              (if (< 2 n)
-                                2
-                                n)))]
-    [(constrain x) (constrain y)]))
+  [move location keypad]
+  (let [new-location (map + move location)]
+    (if (coord->key keypad new-location)
+      new-location
+      location)))
 
+(defn answer [keypad start]
+  (->> (reduce
+        (fn [answer line]
+          ;; reduce-ception
+          (let [final-coord
+                (-> (fn [current-position dir-chr]
+                      ;; walk a line and end with a digit.
+                      (let [direction (dir->vec dir-chr)]
+                        (walk-keypad direction current-position keypad)))
+                    (reduce (last answer) line))]
 
-(->> (reduce
-      (fn [answer line]
-        ;; reduce-ception
-        (let [final-coord
-              (-> (fn [current-position dir-chr]
-                    ;; walk a line and end with a digit.
-                    (let [direction (dir->vec dir-chr)]
-                      (walk-keypad direction current-position)))
-                  (reduce (last answer) line))]
+            (conj answer final-coord)))
+        
+        ;; start at 5 with an empty answer
+        [start]
+        data)
+       (map (partial coord->key keypad))
+       rest
+       (apply str)))
 
-          (conj answer final-coord)))
-  
-      ;; start at 5 with an empty answer
-      [[1 1]]
-      data)
-     (map coord->key)
-     rest
-     (apply str))
-
-
-
+(println "part 1" (answer keypad [1 1]))
+(println "part 2" (answer keypad2 [0 2]))
