@@ -31,6 +31,18 @@
   "Add vectors together."
   (partial map +))
 
+(defn steps-between
+  "Get all the intermediate stops between two vectors
+   assuming a straight line."
+  [[ax ay] [bx by]] 
+  (if (= ax bx)
+    (map vector
+         (repeat ax)
+         (range ay by (if (< ay by) 1 -1)))
+    (map vector
+         (range ax bx (if (< ax bx) 1 -1))
+         (repeat ay))))
+
 (defn turn
   "Given a direction and left or right get a new direction."
   [direction l-or-r]
@@ -43,20 +55,33 @@
       "L" (new-dir-fn compass-left)
       "R" (new-dir-fn compass-right))))
 
+(def result
+  (reduce
+   (fn [[current-direction current-location visited bunny-hq] [l-or-r magnitude]]
+     (let [new-direction (turn current-direction l-or-r)
+           new-dir-vec (-> new-direction
+                           dir->vec
+                           (mul-vec magnitude))
+           new-location (add-vec current-location new-dir-vec)
+           steps-taken (steps-between current-location new-location)
+           ]
+
+       [new-direction
+        new-location
+        (clojure.set/union visited (set steps-taken))
+        (or (not-empty bunny-hq) (reduce
+                                  (fn [found step-took]
+                                    (or found (visited step-took)))
+                                  nil
+                                  steps-taken))]))
+   [:north [0 0] #{} nil]
+   directions))
+
+(defn distance [loc]
+  (apply + (map #(Math/abs %) loc)))
+
+(let [[_ final-location _ bunny-hq] result]
+  (println "part 1" (distance final-location))
+  (println "part 2" (distance bunny-hq)))
 
 
-(def final-location
-  (last
-   (reduce
-    (fn [[current-direction current-location] [l-or-r magnitude]]
-      (let [new-direction (turn current-direction l-or-r)
-            new-dir-vec (-> new-direction
-                            dir->vec
-                            (mul-vec magnitude))]
-        [new-direction (add-vec current-location new-dir-vec)]))
-    [:north [0 0]]
-    directions)))
-
-
-;; the answer
-(apply + (map #(Math/abs %) final-location))
