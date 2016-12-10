@@ -12,18 +12,34 @@
 
 (def input "cxdnnyjw")
 
-(apply str (-> (fn [acc i]
-                 (if (= 8 (count acc))
-                   (reduced acc) ;; stop
-                   (let [start (->> (md5 (str input i))
-                                    (take 6))]
+(println "part 1:"
+         (apply str (-> (fn [acc i]
+                          (if (= 8 (count acc))
+                            (reduced acc) ;; stop
+                            (let [start (->> (md5 (str input i))
+                                             (take 6))]
 
-                     (if (= (butlast start) (repeat 5 \0))
-                       (conj acc (last start))
-                       acc))))
-               (reduce [] (range))))
-
-
-
+                              (if (= (butlast start) (repeat 5 \0))
+                                (conj acc (last start))
+                                acc))))
+                        (reduce [] (range)))))
 
 
+(println "part 2:"
+         (apply str
+                (reduce
+                 (fn [password i]
+                   (if (not-any? nil? password)
+                     (reduced password)
+                     (let [start (->> (md5 (str input i))
+                                      (take 7))]
+                       (if (= (take 5 start) (repeat 5 \0))
+                         (let [position (-> (nth start 5) int (- 48))
+                               character (nth start 6)]
+                           (if (and (< -1 position (count password))
+                                    (nil? (get password position))) 
+                             (assoc password position character)
+                             password))
+                         password))))
+                 (vec (take 8 (repeat nil)))
+                 (range))))
